@@ -1,41 +1,72 @@
-import React from "react";
+import React, {useState} from 'react';
 import MainLayout from "../../layouts/MainLayout";
-import {Grid, Card, Button, Box} from "@material-ui/core";
+import {Box, Button, Card, Grid, TextField} from "@material-ui/core";
 import {useRouter} from "next/router";
-import {ITrack} from "../../types/track";
 import TrackList from "../../components/TrackList";
+import {useTypedSelector} from "../../hooks/useTypedSelector";
+import {NextThunkDispatch, wrapper} from "../../store";
+import {fetchTracks, searchTracks} from "../../store/actions-creators/track";
+import {useDispatch} from "react-redux";
 
 const Index = () => {
     const router = useRouter()
-    const tracks: ITrack[] = [
-        {_id: '1', name: 'Трек 1', artist: 'Артист 1', audio: 'Артист 1', listens: 0},
-        {_id: '2', name: 'Трек 2', artist: 'Артист 2', audio: 'Артист 2', listens: 0},
-        {_id: '3', name: 'Трек 3', artist: 'Артист 3', audio: 'Артист 3', listens: 0},
-    ]
+    const {tracks, error} = useTypedSelector(state => state.track)
+    const [query, setQuery] = useState<string>('')
+    const [timer, setTimer] = useState(null)
+    const dispatch = useDispatch() as NextThunkDispatch
+
+    const search = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value)
+
+        if (timer) {
+            clearTimeout(timer)
+        }
+        setTimer(
+            setTimeout(async () => {
+                await dispatch(await searchTracks(e.target.value))
+            }, 500)
+        )
+    }
+
+    if (error) {
+        return <MainLayout>
+            <h1>{error}</h1>
+        </MainLayout>
+    }
 
     return (
-        <MainLayout>
+        <MainLayout title={"Список треков - музыкальная площадка"}>
             <Grid container justifyContent='center'>
                 <Card style={{width: 900}}>
                     <Box p={3}>
                         <Grid container justifyContent='space-between'>
-                            <h1>
-                                Список треков
-                            </h1>
-                            <Button
-                                onClick={() => router.push('/tracks/create')}
-                            >
+                            <h1>Список треков</h1>
+                            <Button onClick={() => router.push('/tracks/create')}>
                                 Загрузить
                             </Button>
                         </Grid>
                     </Box>
-                    <TrackList
-                        tracks={tracks}
+                    <TextField
+                        fullWidth
+                        value={query}
+                        onChange={search}
                     />
+                    <TrackList tracks={tracks}/>
                 </Card>
             </Grid>
         </MainLayout>
-    )
-}
+    );
+};
 
 export default Index
+
+export const getServerSideProps = wrapper.getServerSideProps(
+    store => async () =>
+    {
+        const dispatch = store.dispatch as NextThunkDispatch;
+        await dispatch(fetchTracks());
+
+        return { props: {} }
+    }
+);
+

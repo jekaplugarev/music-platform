@@ -7,8 +7,58 @@ import TrackProgress from "./TrackProgress";
 import {useTypedSelector} from "../hooks/useTypedSelector";
 import {useActions} from "../hooks/useActions";
 
+let audio
+
 const Player = () => {
-    const active = false
+    const {pause, volume, active, duration, currentTime} = useTypedSelector(state => state.player)
+    const {pauseTrack, playTrack, setVolume, setCurrentTime, setDuration} = useActions()
+
+    useEffect(() => {
+        if (!audio) {
+            audio = new Audio()
+        } else {
+            setAudio()
+            play()
+        }
+    }, [active])
+
+    const setAudio = () => {
+        if (active) {
+            audio.src = 'http://localhost:5000/' + active.audio
+            audio.volume = volume / 100
+            audio.onloadedmetadata = () => {
+                setDuration(Math.ceil(audio.duration))
+            }
+            audio.ontimeupdate = () => {
+                // Время в секундах
+                setCurrentTime(Math.ceil(audio.currentTime))
+            }
+        }
+    }
+
+    const play = () => {
+        if (pause) {
+            playTrack()
+            audio.play()
+        } else {
+            pauseTrack()
+            audio.pause()
+        }
+    }
+
+    const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+        audio.volume = Number(e.target.value) / 100
+        setVolume(Number(e.target.value))
+    }
+
+    const changeCurrentTime = (e: React.ChangeEvent<HTMLInputElement>) => {
+        audio.currentTime = Number(e.target.value)
+        setCurrentTime(Number(e.target.value))
+    }
+
+    if (!active) {
+        return null
+    }
 
     return (
         <div className={styles.player}>
@@ -35,7 +85,7 @@ const Player = () => {
             <TrackProgress
                 left={volume}
                 right={100}
-                nChange={changeVolume}
+                onChange={changeVolume}
             />
         </div>
     );

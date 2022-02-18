@@ -3,18 +3,19 @@ import {playerReducer} from "./playerReducer";
 import {HYDRATE} from "next-redux-wrapper";
 import {trackReducer} from "./trackReducer";
 
-export const rootReducer = combineReducers({
+
+const rootReducer = combineReducers({
     player: playerReducer,
-    track: trackReducer,
+    track: trackReducer
 })
 
 export const reducer = (state, action) => {
     if (action.type === HYDRATE) {
         const nextState = {
-            ...state, // use previous state
-            ...action.payload, // apply delta from hydration
+            ...state,
+            ...action.payload,
         }
-        if (state.count) nextState.count = state.count // preserve count value on client side navigation
+        if (state.count) nextState.count = state.count
         return nextState
     } else {
         return rootReducer(state, action)
